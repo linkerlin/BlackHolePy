@@ -19,7 +19,7 @@ DNSS = [#('156.154.70.1', 53, ("tcp",)),
 
 # a white dns server will service white list domains
 WHITE_DNSS = [
-    ("10.203.104.9", 53, ("udp",), ["baidu.com", "qq.com"]),
+    ("61.152.248.83", 53, ("udp",), ["baidu.com", "qq.com"]),
 ]
 
 
