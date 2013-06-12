@@ -39,7 +39,7 @@ class Servers(object):
         qtype = struct.unpack('!h', query_data[-4:-2])[0]
         return self._query(domain, qtype, query_data=query_data) # query_data must be written as a named argument, because of lru_cache()
 
-    @lru_cache(maxsize=2000, ignore_args=["query_data"])
+    @lru_cache(maxsize=2000, cache_none=False, ignore_args=["query_data"])
     def _query(self, domain, qtype, query_data):
         ret = self.whiteListFirst(query_data)
         if ret:

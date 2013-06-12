@@ -12,7 +12,7 @@ class Counter(dict):
         return 0
 
 
-def lru_cache(maxsize=100, ignore_args=[]):
+def lru_cache(maxsize=100, cache_none=True, ignore_args=[]):
     '''Least-recently-used cache decorator.
 
     Arguments to the cached function must be hashable.
@@ -47,7 +47,7 @@ def lru_cache(maxsize=100, ignore_args=[]):
                 key += (kwd_mark,)
                 if len(real_kwds)>0:
                     key += tuple(sorted(real_kwds))
-                print "key", key
+                #print "key", key
 
             # record recent use of this key
             queue_append(key)
@@ -60,6 +60,8 @@ def lru_cache(maxsize=100, ignore_args=[]):
                 print "hits", wrapper.hits, "miss", wrapper.misses, wrapper
             except KeyError:
                 result = user_function(*args, **kwds)
+                if result is None and cache_none == False:
+                    return
                 cache[key] = result
                 wrapper.misses += 1
 
