@@ -8,8 +8,9 @@ BlackHolePy是一个迷你型的DNS（代理）服务器。
 
 运行需求
 ===========
-Python 2.7
+Python 2.7 或者 PyPy 2.0.2
 如果能安装 GEvent 和 dnspython 那就最好了。不装也能跑。
+在 PyPy 2.0.2 下测试通过。但是PyPy的coroutine暂时还没有支持。
 
 运行
 ===========
