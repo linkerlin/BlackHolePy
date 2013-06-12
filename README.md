@@ -4,7 +4,7 @@ BlackHolePy
 BlackHolePy是一个迷你型的DNS（代理）服务器。
 它的主要特色：
 1) 支持TCP DNS并支持白名单，从而在防止DNS污染的同时支持了内部私有域名解析。
-2) 内置了Cache, 带给你非一般的感觉。尤其是访问国外网站的时候。
+2) 内置了Cache, 带给你飞一般的感觉。尤其是访问国外网站的时候。
 如果你的企业或组织在内部架设了自己的DNS Server，那么可以配置 config.py 里面的 WHITE_DNSS 。
 
 
