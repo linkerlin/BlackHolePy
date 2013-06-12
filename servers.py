@@ -5,6 +5,7 @@ import sys
 import struct
 from dnsserver import bytetodomain
 from caches import lru_cache
+from dns import message as m
 
 
 reload(sys)
@@ -37,10 +38,12 @@ class Servers(object):
     def query(self, query_data):
         domain = bytetodomain(query_data[12:-4])
         qtype = struct.unpack('!h', query_data[-4:-2])[0]
-        return self._query(domain, qtype, query_data=query_data) # query_data must be written as a named argument, because of lru_cache()
+        msg = [line for line in str(m.from_wire(query_data)).split('\n') if line.find("id",0,-1)<0]
+        return self._query(domain, qtype, tuple(msg), query_data=query_data) # query_data must be written as a named argument, because of lru_cache()
 
     @lru_cache(maxsize=2000, cache_none=False, ignore_args=["query_data"])
-    def _query(self, domain, qtype, query_data):
+    def _query(self, domain, qtype, msg, query_data):
+        print msg
         ret = self.whiteListFirst(query_data)
         if ret:
             return ret
