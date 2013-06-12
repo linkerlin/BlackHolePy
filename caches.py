@@ -12,7 +12,7 @@ class Counter(dict):
         return 0
 
 
-def lru_cache(maxsize=100):
+def lru_cache(maxsize=100, ignore_args=[]):
     '''Least-recently-used cache decorator.
 
     Arguments to the cached function must be hashable.
@@ -40,7 +40,14 @@ def lru_cache(maxsize=100):
             # cache key records both positional and keyword args
             key = args
             if kwds:
-                key += (kwd_mark,) + tuple(sorted(kwds.items()))
+                real_kwds = []
+                for k in kwds:
+                    if k not in ignore_args:
+                        real_kwds.append((k, kwds[k]))
+                key += (kwd_mark,)
+                if len(real_kwds)>0:
+                    key += tuple(sorted(real_kwds))
+                print "key", key
 
             # record recent use of this key
             queue_append(key)
@@ -63,7 +70,10 @@ def lru_cache(maxsize=100):
                     while refcount[key]:
                         key = queue_popleft()
                         refcount[key] -= 1
-                    del cache[key], refcount[key]
+                    if key in cache:
+                        del cache[key]
+                    if key in refcount:
+                        refcount[key]
 
             # periodically compact the queue by eliminating duplicate keys
             # while preserving order of most recent access
@@ -144,7 +154,7 @@ def lfu_cache(maxsize=100):
 
 if __name__ == '__main__':
 
-    @lru_cache(maxsize=20)
+    @lru_cache(maxsize=20, ignore_args=["y"])
     def f(x, y):
         return 3 * x + y
 
@@ -152,7 +162,7 @@ if __name__ == '__main__':
     from random import choice
 
     for i in range(1000):
-        r = f(choice(domain), choice(domain))
+        r = f(choice(domain), y=choice(domain))
 
     print(f.hits, f.misses)
 

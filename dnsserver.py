@@ -31,7 +31,8 @@ def bytetodomain(s):
 
 
 class DNSServer(object):
-    def __init__(self, ip, port=53, type_of_server=("tcp", "udp"), white_list=[]):
+    def __init__(self, ip, port=53, type_of_server=("tcp", "udp"), VERBOSE=0, white_list=[]):
+        self.VERBOSE = VERBOSE
         self.white_list = white_list
         if len(self.white_list) > 0:
             self.initWhiteList()
@@ -78,8 +79,9 @@ class DNSServer(object):
             if m: break
         if not m:
             return None
-        print "white list match:",domain,self
+        print "white list match:", domain, self
         return self.query(query_data)
+
 
     def query(self, query_data):
         if self.needToSuppress():
@@ -118,7 +120,10 @@ class DNSServer(object):
             self.ok += 1
         finally:
             if s: s.close()
-            return data, self
+            if int(self.VERBOSE) > 0:
+                self.showInfo(query_data, 0)
+                self.showInfo(data[2:], 1)
+            return data
 
     #----------------------------------------------------
     # show dns packet information

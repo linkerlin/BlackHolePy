@@ -47,12 +47,12 @@ class DNSProxy(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
         for s in self.DNSS:
             assert len(s) == 3
             ip, port, type_of_server = s
-            self.servers.addDNSServer(DNSServer(ip, port, type_of_server))
+            self.servers.addDNSServer(DNSServer(ip, port, type_of_server, self.VERBOSE))
         self.WHITE_DNSS = config.WHITE_DNSS
         for ws in self.WHITE_DNSS:
             assert len(ws) == 4
             ip, port, type_of_server, white_list = ws
-            self.servers.addWhiteDNSServer(DNSServer(ip, port, type_of_server, white_list))
+            self.servers.addWhiteDNSServer(DNSServer(ip, port, type_of_server, self.VERBOSE, white_list))
 
 
     def transfer(self, query_data, addr, server):
@@ -64,13 +64,10 @@ class DNSProxy(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
         sys.stdout.flush()
         response = None
         for i in range(9):
-            response, dnsserv = self.servers.query(query_data)
+            response = self.servers.query(query_data)
             if response:
                 # udp dns packet no length
                 server.sendto(response[2:], addr)
-                if int(self.VERBOSE) > 0:
-                    dnsserv.showInfo(query_data, 0)
-                    dnsserv.showInfo(response[2:], 1)
                 break
         if response is None:
             print "[ERROR] Tried 9 times and failed to resolve %s" % domain

@@ -2,7 +2,9 @@ BlackHolePy
 ===========
 
 BlackHolePy是一个迷你型的DNS（代理）服务器。
-它的主要特色：支持TCP DNS并支持白名单，从而在防止DNS污染的同时支持了内部私有域名解析。
+它的主要特色：
+1) 支持TCP DNS并支持白名单，从而在防止DNS污染的同时支持了内部私有域名解析。
+2) 内置了Cache, 带给你非一般的感觉。尤其是访问国外网站的时候。
 如果你的企业或组织在内部架设了自己的DNS Server，那么可以配置 config.py 里面的 WHITE_DNSS 。
 
 
@@ -10,6 +12,7 @@ BlackHolePy是一个迷你型的DNS（代理）服务器。
 ===========
 Python 2.7 或者 PyPy 2.0.2
 如果能安装 GEvent 和 dnspython 那就最好了。不装也能跑。
+安装GEvent以后，BlackHolePy运行在单线程模式，快捷并节约系统资源。
 在 PyPy 2.0.2 下测试通过。但是PyPy的coroutine暂时还没有支持。
 
 运行
