@@ -124,6 +124,8 @@ class DNSServer(object):
                 try:
                     self.showInfo(query_data, 0)
                     self.showInfo(data[2:], 1)
+                except TypeError as ex:
+                    print ex
                 finally:
                     pass
             return data
