@@ -46,7 +46,7 @@ class Servers(object):
         msg = [line for line in str(m.from_wire(query_data)).split('\n') if line.find("id", 0, -1) < 0]
         responce = self._query(tuple(msg),
                                query_data=query_data) # query_data must be written as a named argument, because of lru_cache()
-        return query_data[0:2] + responce[2:]
+        return responce[0:2] + query_data[0:2] + responce[4:]
 
     #@lru_cache(maxsize=2000, cache_none=False, ignore_args=["query_data"])
     def _query(self, msg, query_data):
