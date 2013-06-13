@@ -3,8 +3,10 @@
 __author__ = 'linkerlin'
 import sys
 import struct
-
-from dns import message as m
+try:
+    from dns import message as m
+except ImportError as ex:
+    print "cannot find dnspython"
 
 from dnsserver import bytetodomain
 from caches import lru_cache
@@ -43,7 +45,8 @@ class Servers(object):
         qtype = struct.unpack('!h', query_data[-4:-2])[0]
         id = struct.unpack('!h', query_data[0:2])[0]
         print "id", id
-        msg = [line for line in str(m.from_wire(query_data)).split('\n') if line.find("id", 0, -1) < 0]
+        #msg = [line for line in str(m.from_wire(query_data)).split('\n') if line.find("id", 0, -1) < 0]
+        msg = query_data[4:]
         responce = self._query(tuple(msg),
                                query_data=query_data) # query_data must be written as a named argument, because of lru_cache()
         return responce[0:2] + query_data[0:2] + responce[4:]

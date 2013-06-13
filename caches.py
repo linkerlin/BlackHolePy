@@ -3,6 +3,7 @@ import functools
 from itertools import ifilterfalse
 from heapq import nsmallest
 from operator import itemgetter
+import threading
 
 
 class Counter(dict):
@@ -34,6 +35,7 @@ def lru_cache(maxsize=100, cache_none=True, ignore_args=[]):
         # lookup optimizations (ugly but fast)
         queue_append, queue_popleft = queue.append, queue.popleft
         queue_appendleft, queue_pop = queue.appendleft, queue.pop
+        lock = threading.RLock()
 
         @functools.wraps(user_function)
         def wrapper(*args, **kwds):
@@ -55,6 +57,7 @@ def lru_cache(maxsize=100, cache_none=True, ignore_args=[]):
 
             # get cache entry or compute if not found
             try:
+                lock.acquire()
                 result = cache[key]
                 wrapper.hits += 1
                 print "hits", wrapper.hits, "miss", wrapper.misses, wrapper
@@ -76,6 +79,8 @@ def lru_cache(maxsize=100, cache_none=True, ignore_args=[]):
                         del cache[key]
                     if key in refcount:
                         refcount[key]
+            finally:
+                lock.release()
 
             # periodically compact the queue by eliminating duplicate keys
             # while preserving order of most recent access

@@ -6,6 +6,15 @@ import struct
 import threading
 import SocketServer
 import optparse
+try:
+    from dns import message as m
+except ImportError as ex:
+    print "cannot find dnspython"
+try:
+    from gevent import monkey
+    monkey.patch_all()
+except ImportError as ex:
+    print "cannot find gevent"
 
 import config
 from dnsserver import DNSServer
