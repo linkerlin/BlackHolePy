@@ -103,7 +103,7 @@ class DNSServer(object):
                 data = s.recv(2048)
                 #print "data:", data
             elif self.isUDPServer():
-                print "udp"
+                #print "udp"
                 sendbuf = query_data
                 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 s.settimeout(self.TIMEOUT) # set socket timeout
