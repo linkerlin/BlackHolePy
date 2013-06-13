@@ -48,7 +48,7 @@ class Servers(object):
                                query_data=query_data) # query_data must be written as a named argument, because of lru_cache()
         return query_data[0:2] + responce[2:]
 
-    @lru_cache(maxsize=2000, cache_none=False, ignore_args=["query_data"])
+    #@lru_cache(maxsize=2000, cache_none=False, ignore_args=["query_data"])
     def _query(self, msg, query_data):
         print msg
         ret = self.whiteListFirst(query_data)
