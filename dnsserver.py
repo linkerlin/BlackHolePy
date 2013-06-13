@@ -121,8 +121,11 @@ class DNSServer(object):
         finally:
             if s: s.close()
             if int(self.VERBOSE) > 0:
-                self.showInfo(query_data, 0)
-                self.showInfo(data[2:], 1)
+                try:
+                    self.showInfo(query_data, 0)
+                    self.showInfo(data[2:], 1)
+                finally:
+                    pass
             return data
 
     #----------------------------------------------------
