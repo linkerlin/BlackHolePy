@@ -60,7 +60,7 @@ def lru_cache(maxsize=100, cache_none=True, ignore_args=[]):
                 lock.acquire()
                 result = cache[key]
                 wrapper.hits += 1
-                print "hits", wrapper.hits, "miss", wrapper.misses, wrapper
+                #print "hits", wrapper.hits, "miss", wrapper.misses, wrapper
             except KeyError:
                 result = user_function(*args, **kwds)
                 if result is None and cache_none == False:

@@ -68,8 +68,7 @@ class DNSProxy(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
         if not query_data: return
         domain = bytetodomain(query_data[12:-4])
         qtype = struct.unpack('!h', query_data[-4:-2])[0]
-        print 'domain:%s, qtype:%x, thread:%d' % \
-              (domain, qtype, threading.activeCount())
+        #print 'domain:%s, qtype:%x, thread:%d' % (domain, qtype, threading.activeCount())
         sys.stdout.flush()
         response = None
         for i in range(9):

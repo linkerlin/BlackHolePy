@@ -44,22 +44,22 @@ class Servers(object):
         domain = bytetodomain(query_data[12:-4])
         qtype = struct.unpack('!h', query_data[-4:-2])[0]
         id = struct.unpack('!h', query_data[0:2])[0]
-        print "id", id
+        #print "id", id
         #msg = [line for line in str(m.from_wire(query_data)).split('\n') if line.find("id", 0, -1) < 0]
         msg = query_data[4:]
         responce = self._query(tuple(msg),
                                query_data=query_data) # query_data must be written as a named argument, because of lru_cache()
         return responce[0:2] + query_data[0:2] + responce[4:]
 
-    #@lru_cache(maxsize=2000, cache_none=False, ignore_args=["query_data"])
+    @lru_cache(maxsize=2000, cache_none=False, ignore_args=["query_data"])
     def _query(self, msg, query_data):
-        print msg
+        #print msg
         ret = self.whiteListFirst(query_data)
         if ret:
             return ret
             # random select a server
         key = sample(self.dns_servers, 1)[0]
-        print key
+        #print key
         server = self.dns_servers[key]
         return server.query(query_data)
 
