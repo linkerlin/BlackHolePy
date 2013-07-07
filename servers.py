@@ -54,7 +54,7 @@ class Servers(object):
         else:
             return responce
 
-    @lru_cache(maxsize=2000, cache_none=False, ignore_args=["query_data"])
+    @lru_cache(maxsize=20000, cache_none=False, ignore_args=["query_data"])
     def _query(self, msg, query_data):
         #print msg
         ret = self.whiteListFirst(query_data)

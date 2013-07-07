@@ -31,7 +31,9 @@ def bytetodomain(s):
 
 
 class DNSServer(object):
-    def __init__(self, ip, port=53, type_of_server=("tcp", "udp"), VERBOSE=0, white_list=[]):
+    def __init__(self, ip, port=53, type_of_server=("tcp", "udp"), VERBOSE=0, white_list=None):
+        if white_list is None: # ref: http://blog.amir.rachum.com/post/54770419679/python-common-newbie-mistakes-part-1
+            white_list = [] # Default values for functions in Python are instantiated when the function is defined, not when it’s called.
         self.VERBOSE = VERBOSE
         self.white_list = white_list
         if len(self.white_list) > 0:

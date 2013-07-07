@@ -39,48 +39,48 @@ def lru_cache(maxsize=100, cache_none=True, ignore_args=[]):
 
         @functools.wraps(user_function)
         def wrapper(*args, **kwds):
-            # cache key records both positional and keyword args
-            key = args
-            if kwds:
-                real_kwds = []
-                for k in kwds:
-                    if k not in ignore_args:
-                        real_kwds.append((k, kwds[k]))
-                key += (kwd_mark,)
-                if len(real_kwds)>0:
-                    key += tuple(sorted(real_kwds))
-                #print "key", key
+            with lock:
+                # cache key records both positional and keyword args
+                key = args
+                if kwds:
+                    real_kwds = []
+                    for k in kwds:
+                        if k not in ignore_args:
+                            real_kwds.append((k, kwds[k]))
+                    key += (kwd_mark,)
+                    if len(real_kwds)>0:
+                        key += tuple(sorted(real_kwds))
+                    #print "key", key
 
-            # record recent use of this key
-            queue_append(key)
-            refcount[key] += 1
+                # record recent use of this key
+                queue_append(key)
+                refcount[key] += 1
 
-            # get cache entry or compute if not found
-            try:
-                lock.acquire()
-                result = cache[key]
-                wrapper.hits += 1
-                #print "hits", wrapper.hits, "miss", wrapper.misses, wrapper
-            except KeyError:
-                result = user_function(*args, **kwds)
-                if result is None and cache_none == False:
-                    return
-                cache[key] = result
-                wrapper.misses += 1
+                # get cache entry or compute if not found
+                try:
+                    result = cache[key]
+                    wrapper.hits += 1
+                    #print "hits", wrapper.hits, "miss", wrapper.misses, wrapper
+                except KeyError:
+                    result = user_function(*args, **kwds)
+                    if result is None and cache_none == False:
+                        return
+                    cache[key] = result
+                    wrapper.misses += 1
 
-                # purge least recently used cache entry
-                if len(cache) > maxsize:
-                    key = queue_popleft()
-                    refcount[key] -= 1
-                    while refcount[key]:
+                    # purge least recently used cache entry
+                    if len(cache) > maxsize:
                         key = queue_popleft()
                         refcount[key] -= 1
-                    if key in cache:
-                        del cache[key]
-                    if key in refcount:
-                        refcount[key]
-            finally:
-                lock.release()
+                        while refcount[key]:
+                            key = queue_popleft()
+                            refcount[key] -= 1
+                        if key in cache:
+                            del cache[key]
+                        if key in refcount:
+                            refcount[key]
+                finally:
+                    pass
 
             # periodically compact the queue by eliminating duplicate keys
             # while preserving order of most recent access
@@ -121,29 +121,31 @@ def lfu_cache(maxsize=100):
         cache = {}                      # mapping of args to results
         use_count = Counter()           # times each key has been accessed
         kwd_mark = object()             # separate positional and keyword args
+        lock = threading.RLock()
 
         @functools.wraps(user_function)
         def wrapper(*args, **kwds):
-            key = args
-            if kwds:
-                key += (kwd_mark,) + tuple(sorted(kwds.items()))
-            use_count[key] += 1
+            with lock:
+                key = args
+                if kwds:
+                    key += (kwd_mark,) + tuple(sorted(kwds.items()))
+                use_count[key] += 1
 
-            # get cache entry or compute if not found
-            try:
-                result = cache[key]
-                wrapper.hits += 1
-            except KeyError:
-                result = user_function(*args, **kwds)
-                cache[key] = result
-                wrapper.misses += 1
+                # get cache entry or compute if not found
+                try:
+                    result = cache[key]
+                    wrapper.hits += 1
+                except KeyError:
+                    result = user_function(*args, **kwds)
+                    cache[key] = result
+                    wrapper.misses += 1
 
-                # purge least frequently used cache entry
-                if len(cache) > maxsize:
-                    for key, _ in nsmallest(maxsize // 10,
-                                            use_count.iteritems(),
-                                            key=itemgetter(1)):
-                        del cache[key], use_count[key]
+                    # purge least frequently used cache entry
+                    if len(cache) > maxsize:
+                        for key, _ in nsmallest(maxsize // 10,
+                                                use_count.iteritems(),
+                                                key=itemgetter(1)):
+                            del cache[key], use_count[key]
 
             return result
 
