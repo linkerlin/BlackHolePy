@@ -82,15 +82,15 @@ def lru_cache(maxsize=100, cache_none=True, ignore_args=[]):
                 finally:
                     pass
 
-            # periodically compact the queue by eliminating duplicate keys
-            # while preserving order of most recent access
-            if len(queue) > maxqueue:
-                refcount.clear()
-                queue_appendleft(sentinel)
-                for key in ifilterfalse(refcount.__contains__,
-                                        iter(queue_pop, sentinel)):
-                    queue_appendleft(key)
-                    refcount[key] = 1
+                # periodically compact the queue by eliminating duplicate keys
+                # while preserving order of most recent access
+                if len(queue) > maxqueue:
+                    refcount.clear()
+                    queue_appendleft(sentinel)
+                    for key in ifilterfalse(refcount.__contains__,
+                                            iter(queue_pop, sentinel)):
+                        queue_appendleft(key)
+                        refcount[key] = 1
 
             return result
 
