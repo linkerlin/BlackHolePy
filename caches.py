@@ -20,18 +20,16 @@ class Counter(dict):
 def sqlite_cache(timeout_seconds=100, cache_none=True, ignore_args=[]):
     import sqlite3
 
-
-
     def decorating_function(user_function,
                             len=len, iter=iter, tuple=tuple, sorted=sorted, KeyError=KeyError):
-        cache_db = sqlite3.connect(u"cache.sqlite")
-        cache_cursor = cache_db.cursor()
-        cache_table = u"table_" + user_function.func_name
-        #print cache_table
-        cache_cursor.execute(
-            u"CREATE TABLE IF NOT EXISTS " + cache_table
-            + u" (key TEXT PRIMARY KEY, value TEXT, update_time  timestamp);")
-        cache_db.commit()
+        with sqlite3.connect(u"cache.sqlite") as cache_db:
+            cache_cursor = cache_db.cursor()
+            cache_table = u"table_" + user_function.func_name
+            #print cache_table
+            cache_cursor.execute(
+                u"CREATE TABLE IF NOT EXISTS " + cache_table
+                + u" (key TEXT PRIMARY KEY, value TEXT, update_time  timestamp);")
+            cache_db.commit()
         kwd_mark = object()             # separate positional and keyword args
         lock = threading.RLock()
 
@@ -48,8 +46,7 @@ def sqlite_cache(timeout_seconds=100, cache_none=True, ignore_args=[]):
                 if len(real_kwds) > 0:
                     key += tuple(sorted(real_kwds))
                     #print "key", key
-            with lock:
-                cache_db = sqlite3.connect(u"cache.sqlite")
+            with lock, sqlite3.connect(u"cache.sqlite") as cache_db:
                 cache_cursor = cache_db.cursor()
                 # get cache entry or compute if not found
                 try:
