@@ -4,6 +4,9 @@ from itertools import ifilterfalse
 from heapq import nsmallest
 from operator import itemgetter
 import threading
+import cPickle as p
+import datetime as dt
+import base64
 
 
 class Counter(dict):
@@ -11,6 +14,80 @@ class Counter(dict):
 
     def __missing__(self, key):
         return 0
+
+
+def sqlite_cache(maxsize=100, cache_none=True, ignore_args=[]):
+    maxqueue = maxsize * 10
+    import sqlite3
+
+    cache_db = sqlite3.connect(u"cache.sqlite")
+    cache_cursor = cache_db.cursor()
+
+    def decorating_function(user_function,
+                            len=len, iter=iter, tuple=tuple, sorted=sorted, KeyError=KeyError):
+        cache_table = u"table_" + user_function.func_name
+        print cache_table
+        cache_cursor.execute(
+            u"CREATE TABLE IF NOT EXISTS " + cache_table
+            + u" (key TEXT PRIMARY KEY, value TEXT, update_time  timestamp);")
+        cache_db.commit()
+        kwd_mark = object()             # separate positional and keyword args
+        lock = threading.RLock()
+
+        @functools.wraps(user_function)
+        def wrapper(*args, **kwds):
+            with lock:
+                # cache key records both positional and keyword args
+                key = args
+                if kwds:
+                    real_kwds = []
+                    for k in kwds:
+                        if k not in ignore_args:
+                            real_kwds.append((k, kwds[k]))
+                    key += (kwd_mark,)
+                    if len(real_kwds) > 0:
+                        key += tuple(sorted(real_kwds))
+                        #print "key", key
+
+                # get cache entry or compute if not found
+                try:
+                    key_str = base64.b64encode(p.dumps(key, p.HIGHEST_PROTOCOL))
+                    #print key_str
+                    result = None
+                    cache_cursor.execute(
+                        u"select * from " + cache_table
+                        + u" where key=? order by update_time desc", (key_str,))
+                    for record in cache_cursor:
+                        print 'record[1].encode("utf-8")', record[1].encode("utf-8")
+                        dump_data=base64.b64decode(record[1])
+                        result = p.loads(dump_data)
+                        print record
+                        break
+                    if result is not None:
+                        wrapper.hits += 1
+                        print "hits", wrapper.hits, "miss", wrapper.misses, wrapper
+                    else:
+                        print "miss:",key_str
+                        result = user_function(*args, **kwds)
+                        if result is None and cache_none == False:
+                            return
+                        value = base64.b64encode(p.dumps(result, p.HIGHEST_PROTOCOL))
+                        print "value", value
+                        cache_cursor.execute(u"INSERT INTO " + cache_table + u" VALUES(?,?,?)",
+                                                   (key_str, value, dt.datetime.now()))
+                        cache_db.commit()
+                        wrapper.misses += 1
+                finally:
+                    pass
+            return result
+
+        def clear():
+            wrapper.hits = wrapper.misses = 0
+
+        wrapper.hits = wrapper.misses = 0
+        return wrapper
+
+    return decorating_function
 
 
 def lru_cache(maxsize=100, cache_none=True, ignore_args=[]):
@@ -48,9 +125,9 @@ def lru_cache(maxsize=100, cache_none=True, ignore_args=[]):
                         if k not in ignore_args:
                             real_kwds.append((k, kwds[k]))
                     key += (kwd_mark,)
-                    if len(real_kwds)>0:
+                    if len(real_kwds) > 0:
                         key += tuple(sorted(real_kwds))
-                    #print "key", key
+                        #print "key", key
 
                 # record recent use of this key
                 queue_append(key)
@@ -187,3 +264,11 @@ if __name__ == '__main__':
 
     print(f.hits, f.misses)
 
+    @sqlite_cache()
+    def f2(x, y):
+        return 3 * x + y
+
+    domain = range(500)
+    for i in range(1000):
+        r = f2(choice(domain), y=choice(domain))
+    print(f2.hits, f2.misses)
