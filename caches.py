@@ -16,8 +16,7 @@ class Counter(dict):
         return 0
 
 
-def sqlite_cache(maxsize=100, cache_none=True, ignore_args=[]):
-    maxqueue = maxsize * 10
+def sqlite_cache(timeout_seconds=100, cache_none=True, ignore_args=[]):
     import sqlite3
 
     cache_db = sqlite3.connect(u"cache.sqlite")
@@ -26,7 +25,7 @@ def sqlite_cache(maxsize=100, cache_none=True, ignore_args=[]):
     def decorating_function(user_function,
                             len=len, iter=iter, tuple=tuple, sorted=sorted, KeyError=KeyError):
         cache_table = u"table_" + user_function.func_name
-        print cache_table
+        #print cache_table
         cache_cursor.execute(
             u"CREATE TABLE IF NOT EXISTS " + cache_table
             + u" (key TEXT PRIMARY KEY, value TEXT, update_time  timestamp);")
@@ -58,27 +57,30 @@ def sqlite_cache(maxsize=100, cache_none=True, ignore_args=[]):
                         u"select * from " + cache_table
                         + u" where key=? order by update_time desc", (key_str,))
                     for record in cache_cursor:
-                        print 'record[1].encode("utf-8")', record[1].encode("utf-8")
+                        #print 'record[1].encode("utf-8")', record[1].encode("utf-8")
                         dump_data=base64.b64decode(record[1])
                         result = p.loads(dump_data)
-                        print record
+                        #print record
                         break
                     if result is not None:
                         wrapper.hits += 1
-                        print "hits", wrapper.hits, "miss", wrapper.misses, wrapper
+                        #print "hits", wrapper.hits, "miss", wrapper.misses, wrapper
                     else:
-                        print "miss:",key_str
+                        #print "miss:",key_str
                         result = user_function(*args, **kwds)
                         if result is None and cache_none == False:
                             return
                         value = base64.b64encode(p.dumps(result, p.HIGHEST_PROTOCOL))
-                        print "value", value
+                        #print "value", value
                         cache_cursor.execute(u"INSERT INTO " + cache_table + u" VALUES(?,?,?)",
                                                    (key_str, value, dt.datetime.now()))
-                        cache_db.commit()
                         wrapper.misses += 1
                 finally:
-                    pass
+                    timeout=dt.datetime.now() - dt.timedelta(seconds=timeout_seconds)
+                    #print str(timeout),type(timeout)
+                    cache_cursor.execute(u"DELETE FROM "+cache_table+u" WHERE update_time < datetime(?)",
+                                         (str(timeout),))
+                    cache_db.commit()
             return result
 
         def clear():
@@ -268,7 +270,7 @@ if __name__ == '__main__':
     def f2(x, y):
         return 3 * x + y
 
-    domain = range(500)
+    domain = range(50)
     for i in range(1000):
         r = f2(choice(domain), y=choice(domain))
     print(f2.hits, f2.misses)
