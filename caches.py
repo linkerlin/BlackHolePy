@@ -20,11 +20,12 @@ class Counter(dict):
 def sqlite_cache(timeout_seconds=100, cache_none=True, ignore_args=[]):
     import sqlite3
 
-    cache_db = sqlite3.connect(u"cache.sqlite")
-    cache_cursor = cache_db.cursor()
+
 
     def decorating_function(user_function,
                             len=len, iter=iter, tuple=tuple, sorted=sorted, KeyError=KeyError):
+        cache_db = sqlite3.connect(u"cache.sqlite")
+        cache_cursor = cache_db.cursor()
         cache_table = u"table_" + user_function.func_name
         #print cache_table
         cache_cursor.execute(
@@ -36,19 +37,20 @@ def sqlite_cache(timeout_seconds=100, cache_none=True, ignore_args=[]):
 
         @functools.wraps(user_function)
         def wrapper(*args, **kwds):
+            # cache key records both positional and keyword args
+            key = args
+            if kwds:
+                real_kwds = []
+                for k in kwds:
+                    if k not in ignore_args:
+                        real_kwds.append((k, kwds[k]))
+                key += (kwd_mark,)
+                if len(real_kwds) > 0:
+                    key += tuple(sorted(real_kwds))
+                    #print "key", key
             with lock:
-                # cache key records both positional and keyword args
-                key = args
-                if kwds:
-                    real_kwds = []
-                    for k in kwds:
-                        if k not in ignore_args:
-                            real_kwds.append((k, kwds[k]))
-                    key += (kwd_mark,)
-                    if len(real_kwds) > 0:
-                        key += tuple(sorted(real_kwds))
-                        #print "key", key
-
+                cache_db = sqlite3.connect(u"cache.sqlite")
+                cache_cursor = cache_db.cursor()
                 # get cache entry or compute if not found
                 try:
                     key_str = base64.b64encode(p.dumps(key, p.HIGHEST_PROTOCOL))
