@@ -7,6 +7,7 @@ import threading
 import cPickle as p
 import datetime as dt
 import base64
+import random
 
 
 class Counter(dict):
@@ -74,13 +75,15 @@ def sqlite_cache(timeout_seconds=100, cache_none=True, ignore_args=[]):
                         #print "value", value
                         cache_cursor.execute(u"INSERT INTO " + cache_table + u" VALUES(?,?,?)",
                                                    (key_str, value, dt.datetime.now()))
+                        cache_db.commit()
                         wrapper.misses += 1
                 finally:
-                    timeout=dt.datetime.now() - dt.timedelta(seconds=timeout_seconds)
-                    #print str(timeout),type(timeout)
-                    cache_cursor.execute(u"DELETE FROM "+cache_table+u" WHERE update_time < datetime(?)",
-                                         (str(timeout),))
-                    cache_db.commit()
+                    if random.random()>0.99:
+                        timeout=dt.datetime.now() - dt.timedelta(seconds=timeout_seconds)
+                        #print str(timeout),type(timeout)
+                        cache_cursor.execute(u"DELETE FROM "+cache_table+u" WHERE update_time < datetime(?)",
+                                             (str(timeout),))
+                        cache_db.commit()
             return result
 
         def clear():

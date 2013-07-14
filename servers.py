@@ -9,7 +9,7 @@ except ImportError as ex:
     print "cannot find dnspython"
 
 from dnsserver import bytetodomain
-from caches import lru_cache
+from caches import *
 
 
 reload(sys)
@@ -54,7 +54,7 @@ class Servers(object):
         else:
             return responce
 
-    @sqlite_cache(timeout_seconds=20000, cache_none=False, ignore_args=["query_data"])
+    @sqlite_cache(timeout_seconds=200000, cache_none=False, ignore_args=["query_data"])
     def _query(self, msg, query_data):
         #print msg
         ret = self.whiteListFirst(query_data)
