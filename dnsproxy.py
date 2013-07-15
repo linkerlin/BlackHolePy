@@ -82,7 +82,8 @@ class DNSProxy(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
         return
 
 
-if __name__ == '__main__':
+
+def run_server():
     print '>> Please wait program init....'
     print '>> Init finished!'
     print '>> Now you can set dns server to 127.0.0.1'
@@ -96,3 +97,6 @@ if __name__ == '__main__':
 
     proxy.serve_forever()
     proxy.shutdown()
+
+if __name__ == '__main__':
+    run_server()

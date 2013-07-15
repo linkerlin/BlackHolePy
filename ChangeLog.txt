@@ -1,0 +1,6 @@
+# BlackHolePy changelog
+
+## 2013-07-15 1.0
+* added sqlite as a backend for cache
+* fixed a bug which can freeze BlackHolePy
+* fixed a bug with error message:"OperationalError: Could not open database"

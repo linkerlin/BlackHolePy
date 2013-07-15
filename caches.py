@@ -17,7 +17,7 @@ class Counter(dict):
         return 0
 
 
-def sqlite_cache(timeout_seconds=100, cache_none=True, ignore_args=[]):
+def sqlite_cache(timeout_seconds=100, cache_none=True, ignore_args={}):
     import sqlite3
 
     def decorating_function(user_function,
@@ -35,6 +35,7 @@ def sqlite_cache(timeout_seconds=100, cache_none=True, ignore_args=[]):
 
         @functools.wraps(user_function)
         def wrapper(*args, **kwds):
+            result = None
             # cache key records both positional and keyword args
             key = args
             if kwds:
@@ -45,50 +46,43 @@ def sqlite_cache(timeout_seconds=100, cache_none=True, ignore_args=[]):
                 key += (kwd_mark,)
                 if len(real_kwds) > 0:
                     key += tuple(sorted(real_kwds))
-                    #print "key", key
             with lock, sqlite3.connect(u"cache.sqlite") as cache_db:
                 cache_cursor = cache_db.cursor()
                 # get cache entry or compute if not found
                 try:
                     key_str = base64.b64encode(p.dumps(key, p.HIGHEST_PROTOCOL))
-                    #print key_str
-                    result = None
                     cache_cursor.execute(
                         u"select * from " + cache_table
                         + u" where key=? order by update_time desc", (key_str,))
                     for record in cache_cursor:
-                        #print 'record[1].encode("utf-8")', record[1].encode("utf-8")
-                        dump_data=base64.b64decode(record[1])
+                        dump_data = base64.b64decode(record[1])
                         result = p.loads(dump_data)
-                        #print record
                         break
                     if result is not None:
                         wrapper.hits += 1
                         #print "hits", wrapper.hits, "miss", wrapper.misses, wrapper
                     else:
-                        #print "miss:",key_str
                         result = user_function(*args, **kwds)
                         if result is None and cache_none == False:
                             return
                         value = base64.b64encode(p.dumps(result, p.HIGHEST_PROTOCOL))
-                        #print "value", value
-                        cache_cursor.execute(u"INSERT INTO " + cache_table + u" VALUES(?,?,?)",
-                                                   (key_str, value, dt.datetime.now()))
-                        cache_db.commit()
+                        cache_cursor.execute(u"REPLACE INTO " + cache_table + u" VALUES(?,?,?)",
+                                             (key_str, value, dt.datetime.now()))
                         wrapper.misses += 1
                 finally:
-                    if random.random()>0.99:
-                        timeout=dt.datetime.now() - dt.timedelta(seconds=timeout_seconds)
-                        #print str(timeout),type(timeout)
-                        cache_cursor.execute(u"DELETE FROM "+cache_table+u" WHERE update_time < datetime(?)",
+                    if random.random() > 0.999:
+                        timeout = dt.datetime.now() - dt.timedelta(seconds=timeout_seconds)
+                        cache_cursor.execute(u"DELETE FROM " + cache_table + u" WHERE update_time < datetime(?)",
                                              (str(timeout),))
-                        cache_db.commit()
+                    cache_db.commit()
             return result
 
         def clear():
-            wrapper.hits = wrapper.misses = 0
+            with lock:
+                wrapper.hits = wrapper.misses = 0
 
         wrapper.hits = wrapper.misses = 0
+        wrapper.clear = clear
         return wrapper
 
     return decorating_function

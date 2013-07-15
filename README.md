@@ -19,7 +19,8 @@ Python 2.7 或者 PyPy 2.0.2
 
 运行
 ===========
-sudo python dnsproxy.py
+sudo ./run.sh (Linux or Mac) 当以root用户运行时，sudo 是不需要的。
+./run.bat (Windows)
 
 然后把你的DNS服务器配置到 127.0.0.1 即可。
 
