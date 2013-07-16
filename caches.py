@@ -31,7 +31,7 @@ def sqlite_cache(timeout_seconds=100, cache_none=True, ignore_args={}):
                 + u" (key TEXT PRIMARY KEY, value TEXT, update_time  timestamp);")
             cache_db.commit()
         kwd_mark = object()             # separate positional and keyword args
-        lock = threading.Semaphore() # Lock and RLock doesn't work well with sqlite3 in multi-threads env
+        lock = threading.Lock()
 
         @functools.wraps(user_function)
         def wrapper(*args, **kwds):
