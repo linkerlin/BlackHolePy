@@ -17,6 +17,7 @@ sys.setdefaultencoding("utf-8")
 
 from dnsserver import DNSServer
 from random import sample
+import base64
 
 
 class Servers(object):
@@ -48,7 +49,7 @@ class Servers(object):
         #msg = [line for line in str(m.from_wire(query_data)).split('\n') if line.find("id", 0, -1) < 0]
         msg = query_data[4:]
         responce = self._query(tuple(msg),
-                               query_data=query_data) # query_data must be written as a named argument, because of lru_cache()
+                               query_data=query_data) # query_data must be written as a named argument, because of cache's ignore_args
         if responce:
             return responce[0:2] + query_data[0:2] + responce[4:]
         else:
