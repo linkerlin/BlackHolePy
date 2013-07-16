@@ -9,7 +9,7 @@ import datetime as dt
 import base64
 import random
 import time
-
+from hashlib import md5
 
 class Counter(dict):
     'Mapping where default values are zero'
@@ -29,7 +29,7 @@ def sqlite_cache(timeout_seconds=100, cache_none=True, ignore_args={}):
             #print cache_table
             cache_cursor.execute(
                 u"CREATE TABLE IF NOT EXISTS " + cache_table
-                + u" (key TEXT PRIMARY KEY, value TEXT, update_time  timestamp);")
+                + u" (key CHAR(32) PRIMARY KEY, value TEXT, update_time  timestamp);")
             cache_db.commit()
         kwd_mark = object()             # separate positional and keyword args
         lock = threading.Lock()
@@ -55,27 +55,32 @@ def sqlite_cache(timeout_seconds=100, cache_none=True, ignore_args={}):
                 except sqlite3.OperationalError as ex:
                     print ex
                     time.sleep(0.1)
-
+            #print "key:", key
             # get cache entry or compute if not found
             try:
                 cache_cursor = cache_db.cursor()
-                key_str = base64.b64encode(p.dumps(key, p.HIGHEST_PROTOCOL))
+                key_str = str(key) # 更加宽泛的Key，只检查引用的地址，而不管内容，“浅”检查,更好的配合方法，但是可能会出现过于宽泛的问题
+                key_str = md5(k).hexdigest()#base64.b64encode(k)
+                print "key_str:",key_str[:60]
                 with lock:
                     cache_cursor.execute(
                         u"select * from " + cache_table
-                        + u" where key=? order by update_time desc", (key_str,))
+                        + u" where key = ? order by update_time desc", (key_str,))
                 for record in cache_cursor:
                     dump_data = base64.b64decode(record[1])
+                    #dump_data = record[1]
                     result = p.loads(dump_data)
+                    print "cached:", md5(result).hexdigest()
                     break
                 if result is not None:
                     with lock:
                         wrapper.hits += 1
-                    #print "hits", wrapper.hits, "miss", wrapper.misses, wrapper
+                    print "hits", wrapper.hits, "miss", wrapper.misses, wrapper
                 else:
                     result = user_function(*args, **kwds)
                     if result is None and cache_none == False:
                         return
+                    #value = p.dumps(result, p.HIGHEST_PROTOCOL)
                     value = base64.b64encode(p.dumps(result, p.HIGHEST_PROTOCOL))
                     while 1:
                         try:
