@@ -8,6 +8,7 @@ import cPickle as p
 import datetime as dt
 import base64
 import random
+import time
 
 
 class Counter(dict):
@@ -36,6 +37,7 @@ def sqlite_cache(timeout_seconds=100, cache_none=True, ignore_args={}):
         @functools.wraps(user_function)
         def wrapper(*args, **kwds):
             result = None
+            cache_db = None
             # cache key records both positional and keyword args
             key = args
             if kwds:
@@ -46,38 +48,55 @@ def sqlite_cache(timeout_seconds=100, cache_none=True, ignore_args={}):
                 key += (kwd_mark,)
                 if len(real_kwds) > 0:
                     key += tuple(sorted(real_kwds))
+            while cache_db is None:
+                try:
+                    with lock:
+                        cache_db = sqlite3.connect(u"cache.sqlite")
+                except sqlite3.OperationalError as ex:
+                    print ex
+                    time.sleep(0.1)
+
+            # get cache entry or compute if not found
             try:
-                with lock, sqlite3.connect(u"cache.sqlite") as cache_db:
-                    cache_cursor = cache_db.cursor()
-                    # get cache entry or compute if not found
-                    try:
-                        key_str = base64.b64encode(p.dumps(key, p.HIGHEST_PROTOCOL))
-                        cache_cursor.execute(
-                            u"select * from " + cache_table
-                            + u" where key=? order by update_time desc", (key_str,))
-                        for record in cache_cursor:
-                            dump_data = base64.b64decode(record[1])
-                            result = p.loads(dump_data)
-                            break
-                        if result is not None:
-                            wrapper.hits += 1
-                            #print "hits", wrapper.hits, "miss", wrapper.misses, wrapper
-                        else:
-                            result = user_function(*args, **kwds)
-                            if result is None and cache_none == False:
-                                return
-                            value = base64.b64encode(p.dumps(result, p.HIGHEST_PROTOCOL))
+                cache_cursor = cache_db.cursor()
+                key_str = base64.b64encode(p.dumps(key, p.HIGHEST_PROTOCOL))
+                with lock:
+                    cache_cursor.execute(
+                        u"select * from " + cache_table
+                        + u" where key=? order by update_time desc", (key_str,))
+                for record in cache_cursor:
+                    dump_data = base64.b64decode(record[1])
+                    result = p.loads(dump_data)
+                    break
+                if result is not None:
+                    with lock:
+                        wrapper.hits += 1
+                    #print "hits", wrapper.hits, "miss", wrapper.misses, wrapper
+                else:
+                    result = user_function(*args, **kwds)
+                    if result is None and cache_none == False:
+                        return
+                    value = base64.b64encode(p.dumps(result, p.HIGHEST_PROTOCOL))
+                    while 1:
+                        try:
                             cache_cursor.execute(u"REPLACE INTO " + cache_table + u" VALUES(?,?,?)",
-                                                 (key_str, value, dt.datetime.now()))
-                            wrapper.misses += 1
-                    finally:
-                        if random.random() > 0.999:
-                            timeout = dt.datetime.now() - dt.timedelta(seconds=timeout_seconds)
-                            cache_cursor.execute(u"DELETE FROM " + cache_table + u" WHERE update_time < datetime(?)",
-                                                 (str(timeout),))
-                        cache_db.commit()
-            except sqlite3.OperationalError as ex:
-                print ex
+                                         (key_str, value, dt.datetime.now()))
+                        except sqlite3.OperationalError as ex:
+                            print ex, "retry update db."
+                        else:
+                            cache_db.commit()
+                            with lock:
+                                wrapper.misses += 1
+                            break
+            finally:
+                if random.random() > 0.999:
+                    timeout = dt.datetime.now() - dt.timedelta(seconds=timeout_seconds)
+                    with lock:
+                        cache_cursor.execute(u"DELETE FROM " + cache_table + u" WHERE update_time < datetime(?)",
+                                         (str(timeout),))
+                with lock:
+                    cache_db.commit()
+                    cache_db.close()
             return result
 
         def clear():
