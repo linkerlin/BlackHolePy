@@ -1,3 +1,10 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+__author__ = 'linkerlin'
+import sys
+
+reload(sys)
+sys.setdefaultencoding("utf-8")
 import collections
 import functools
 from itertools import ifilterfalse
@@ -56,7 +63,7 @@ def sqlite_cache(timeout_seconds=100, cache_none=True, ignore_args={}):
                 except sqlite3.OperationalError as ex:
                     print ex
                     time.sleep(0.05)
-            # get cache entry or compute if not found
+                # get cache entry or compute if not found
             try:
                 cache_cursor = cache_db.cursor()
                 key_str = str(key) # 更加宽泛的Key，只检查引用的地址，而不管内容，“浅”检查,更好的配合方法，但是可能会出现过于宽泛的问题
