@@ -215,7 +215,7 @@ def lru_cache(maxsize=100, cache_none=True, ignore_args=[]):
 
 
 def lfu_cache(maxsize=100):
-    '''Least-frequenty-used cache decorator.
+    '''Least-frequently-used cache decorator.
 
     Arguments to the cached function must be hashable.
     Cache performance statistics stored in f.hits and f.misses.
